@@ -1,0 +1,37 @@
+---
+title: C4 Components
+config:
+  flowchart:
+    shapeSize: variable
+    wrappingWidth: 220
+---
+flowchart TB
+    request["Исходное блюдо, корзина и меню<br/>от Сервиса замены"]
+    subgraph ml["ML-сервис ранжирования"]
+      direction TB
+      contract["Валидатор запроса.<br/>Проверяет корзину и товара в заведении"]
+      generation["Отбор кандидатов.<br/>Оставляет блюда того же ресторана и категории (по цене, объему и типу)"]
+      features["Сборщик признаков.<br/>Сравнивает фичи.<br/>Добавляет историю выбора."]
+      selector["Менеджер версий.<br/>Выбирает версию модели на запрос"]
+      scorer["Предиктор.<br/>Считает и калибрует вероятность выбора"]
+      output["Формирователь ответа.<br/>Возвращает до трёх блюд с оценкой от tolerance"]
+      loader["Загрузчик модели.<br/>Подгружает и проверяет версию модели"]
+      contract -->|"Исходное блюдо и список из меню"| generation
+      generation -->|"Подходящие кандидаты"| features
+      features -->|"Признаки кандидатов"| scorer
+      selector -->|"Модель"| scorer
+      scorer -->|"Блюда и вероятности выбора"| output
+      loader -.->|"Проверенная версия модели"| selector
+    end
+    featurePort["Чтение признаков"]
+    modelPort["Реестр моделей"]
+    response["Ответ сервису замены<br/>Блюда, оценки, версия и снимок признаков"]
+    request -->|"Вызов «Оценить кандидатов» на BPMN"| contract
+    features -->|"Читает признаки блюд и историю выбора"| featurePort
+    loader -.->|"Загружает опубликованную версию"| modelPort
+    output -->|"Варианты или пустой список"| response
+    %% legend: Голубые блоки — компоненты ML-сервиса. Белые блоки — вход, внешние зависимости и ответ. Пунктир — загрузка модели.
+    classDef component fill:#dceeff,color:#102f50,stroke:#1168bd
+    classDef port fill:#fff,color:#172b4d,stroke:#718096,stroke-dasharray:4 3
+    class contract,generation,features,selector,scorer,output,loader component
+    class request,featurePort,modelPort,response port

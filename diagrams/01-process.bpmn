@@ -1,0 +1,442 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<bpmn:definitions xmlns:bpmn="http://www.omg.org/spec/BPMN/20100524/MODEL" xmlns:bpmndi="http://www.omg.org/spec/BPMN/20100524/DI" xmlns:dc="http://www.omg.org/spec/DD/20100524/DC" xmlns:di="http://www.omg.org/spec/DD/20100524/DI" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" id="Definitions_Replacement" targetNamespace="https://github.com/iivancataew2017-lgtm/mlops-dz-6" exporter="bpmn-js (https://demo.bpmn.io)" exporterVersion="18.31.1">
+  <bpmn:error id="Error_ML" name="Ошибка, тайм-аут или невалидный ответ ML" errorCode="ML_UNAVAILABLE" />
+  <bpmn:error id="Error_Catalog" name="Нет актуального меню" errorCode="MENU_UNAVAILABLE" />
+  <bpmn:process id="Process_Replacement" name="Подбор замены недоступного блюда" isExecutable="false">
+    <bpmn:laneSet id="LaneSet">
+      <bpmn:lane id="Lane_ML" name="ML-сервис">
+        <bpmn:flowNodeRef>B3</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>ML_Error</bpmn:flowNodeRef>
+      </bpmn:lane>
+      <bpmn:lane id="Lane_Select" name="Сервис замены товара">
+        <bpmn:flowNodeRef>Start</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>B2</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>B4</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>B5</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>B6</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>B7</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>B8a</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>B8b</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>B8c</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>Choice</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>B9</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>MergeOutcome</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>B10</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>OptionsSent</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>B11</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>End</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>Catalog_Error</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>User_Timeout</bpmn:flowNodeRef>
+      </bpmn:lane>
+    </bpmn:laneSet>
+    <bpmn:startEvent id="Start">
+      <bpmn:outgoing>F_Start</bpmn:outgoing>
+      <bpmn:messageEventDefinition id="StartMessage" />
+    </bpmn:startEvent>
+    <bpmn:serviceTask id="B2" name="Получить&#10;корзину и меню">
+      <bpmn:incoming>F_Start</bpmn:incoming>
+      <bpmn:outgoing>F_ToML</bpmn:outgoing>
+    </bpmn:serviceTask>
+    <bpmn:serviceTask id="B3" name="Оценить&#10;кандидатов">
+      <bpmn:incoming>F_ToML</bpmn:incoming>
+      <bpmn:outgoing>F_MLResult</bpmn:outgoing>
+    </bpmn:serviceTask>
+    <bpmn:exclusiveGateway id="B4" name="Оценка&#10;по tolerance" default="F_NoML">
+      <bpmn:incoming>F_MLResult</bpmn:incoming>
+      <bpmn:outgoing>F_YesML</bpmn:outgoing>
+      <bpmn:outgoing>F_NoML</bpmn:outgoing>
+    </bpmn:exclusiveGateway>
+    <bpmn:serviceTask id="B5" name="Подобрать&#10;по правилу">
+      <bpmn:incoming>F_NoML</bpmn:incoming>
+      <bpmn:incoming>F_Error</bpmn:incoming>
+      <bpmn:outgoing>F_Rule</bpmn:outgoing>
+    </bpmn:serviceTask>
+    <bpmn:serviceTask id="B6" name="Проверить&#10;доступность">
+      <bpmn:incoming>F_YesML</bpmn:incoming>
+      <bpmn:incoming>F_Rule</bpmn:incoming>
+      <bpmn:outgoing>F_Availability</bpmn:outgoing>
+    </bpmn:serviceTask>
+    <bpmn:exclusiveGateway id="B7" name="Есть&#10;варианты?" default="F_Empty">
+      <bpmn:incoming>F_Availability</bpmn:incoming>
+      <bpmn:outgoing>F_Show</bpmn:outgoing>
+      <bpmn:outgoing>F_Empty</bpmn:outgoing>
+    </bpmn:exclusiveGateway>
+    <bpmn:sendTask id="B8a" name="Показать&#10;до 3 блюд">
+      <bpmn:incoming>F_Show</bpmn:incoming>
+      <bpmn:outgoing>F_Wait</bpmn:outgoing>
+    </bpmn:sendTask>
+    <bpmn:serviceTask id="B8b" name="Завершить&#10;без замены">
+      <bpmn:incoming>F_CatalogFail</bpmn:incoming>
+      <bpmn:incoming>F_Empty</bpmn:incoming>
+      <bpmn:outgoing>F_NoOptions</bpmn:outgoing>
+    </bpmn:serviceTask>
+    <bpmn:receiveTask id="B8c" name="Получить&#10;решение">
+      <bpmn:incoming>F_Wait</bpmn:incoming>
+      <bpmn:outgoing>F_Choice</bpmn:outgoing>
+    </bpmn:receiveTask>
+    <bpmn:exclusiveGateway id="Choice" name="Блюдо&#10;выбрано?" default="F_Refused">
+      <bpmn:incoming>F_Choice</bpmn:incoming>
+      <bpmn:outgoing>F_Apply</bpmn:outgoing>
+      <bpmn:outgoing>F_Refused</bpmn:outgoing>
+    </bpmn:exclusiveGateway>
+    <bpmn:serviceTask id="B9" name="Применить&#10;замену">
+      <bpmn:incoming>F_Apply</bpmn:incoming>
+      <bpmn:outgoing>F_Applied</bpmn:outgoing>
+    </bpmn:serviceTask>
+    <bpmn:exclusiveGateway id="MergeOutcome" name="" gatewayDirection="Converging">
+      <bpmn:incoming>F_NoOptions</bpmn:incoming>
+      <bpmn:incoming>F_Refused</bpmn:incoming>
+      <bpmn:incoming>F_UserTimeout</bpmn:incoming>
+      <bpmn:incoming>F_Applied</bpmn:incoming>
+      <bpmn:outgoing>F_Log</bpmn:outgoing>
+    </bpmn:exclusiveGateway>
+    <bpmn:serviceTask id="B10" name="Записать&#10;показ и исход">
+      <bpmn:incoming>F_Log</bpmn:incoming>
+      <bpmn:outgoing>F_CheckOptions</bpmn:outgoing>
+    </bpmn:serviceTask>
+    <bpmn:exclusiveGateway id="OptionsSent" name="Был&#10;показ?" default="F_Silent">
+      <bpmn:incoming>F_CheckOptions</bpmn:incoming>
+      <bpmn:outgoing>F_Return</bpmn:outgoing>
+      <bpmn:outgoing>F_Silent</bpmn:outgoing>
+    </bpmn:exclusiveGateway>
+    <bpmn:sendTask id="B11" name="Вернуть&#10;итог">
+      <bpmn:incoming>F_Return</bpmn:incoming>
+      <bpmn:outgoing>F_End</bpmn:outgoing>
+    </bpmn:sendTask>
+    <bpmn:endEvent id="End" name="Подбор завершён">
+      <bpmn:incoming>F_End</bpmn:incoming>
+      <bpmn:incoming>F_Silent</bpmn:incoming>
+    </bpmn:endEvent>
+    <bpmn:boundaryEvent id="Catalog_Error" name="Ошибка меню" attachedToRef="B2">
+      <bpmn:outgoing>F_CatalogFail</bpmn:outgoing>
+      <bpmn:errorEventDefinition id="Catalog_ErrorDef" errorRef="Error_Catalog" />
+    </bpmn:boundaryEvent>
+    <bpmn:boundaryEvent id="User_Timeout" name="Нет ответа" attachedToRef="B8c">
+      <bpmn:outgoing>F_UserTimeout</bpmn:outgoing>
+      <bpmn:timerEventDefinition id="User_TimeoutDef">
+        <bpmn:timeDuration xsi:type="bpmn:tFormalExpression">${confirmationTimeout}</bpmn:timeDuration>
+      </bpmn:timerEventDefinition>
+    </bpmn:boundaryEvent>
+    <bpmn:boundaryEvent id="ML_Error" name="Сбой ML" attachedToRef="B3">
+      <bpmn:outgoing>F_Error</bpmn:outgoing>
+      <bpmn:errorEventDefinition id="ML_ErrorDef" errorRef="Error_ML" />
+    </bpmn:boundaryEvent>
+    <bpmn:sequenceFlow id="F_Start" sourceRef="Start" targetRef="B2" />
+    <bpmn:sequenceFlow id="F_ToML" sourceRef="B2" targetRef="B3" />
+    <bpmn:sequenceFlow id="F_MLResult" sourceRef="B3" targetRef="B4" />
+    <bpmn:sequenceFlow id="F_YesML" name="Да" sourceRef="B4" targetRef="B6">
+      <bpmn:conditionExpression xsi:type="bpmn:tFormalExpression">valid_response and max_p_accept &gt;= tolerance</bpmn:conditionExpression>
+    </bpmn:sequenceFlow>
+    <bpmn:sequenceFlow id="F_NoML" name="Нет" sourceRef="B4" targetRef="B5" />
+    <bpmn:sequenceFlow id="F_Error" sourceRef="ML_Error" targetRef="B5" />
+    <bpmn:sequenceFlow id="F_Rule" sourceRef="B5" targetRef="B6" />
+    <bpmn:sequenceFlow id="F_Availability" sourceRef="B6" targetRef="B7" />
+    <bpmn:sequenceFlow id="F_Show" name="Да" sourceRef="B7" targetRef="B8a">
+      <bpmn:conditionExpression xsi:type="bpmn:tFormalExpression">len(candidates) &gt; 0</bpmn:conditionExpression>
+    </bpmn:sequenceFlow>
+    <bpmn:sequenceFlow id="F_Empty" name="Нет" sourceRef="B7" targetRef="B8b" />
+    <bpmn:sequenceFlow id="F_Wait" sourceRef="B8a" targetRef="B8c" />
+    <bpmn:sequenceFlow id="F_CatalogFail" sourceRef="Catalog_Error" targetRef="B8b" />
+    <bpmn:sequenceFlow id="F_NoOptions" sourceRef="B8b" targetRef="MergeOutcome" />
+    <bpmn:sequenceFlow id="F_Choice" sourceRef="B8c" targetRef="Choice" />
+    <bpmn:sequenceFlow id="F_Apply" name="Да" sourceRef="Choice" targetRef="B9">
+      <bpmn:conditionExpression xsi:type="bpmn:tFormalExpression">chosen_item_id is not None</bpmn:conditionExpression>
+    </bpmn:sequenceFlow>
+    <bpmn:sequenceFlow id="F_Refused" name="Отказ" sourceRef="Choice" targetRef="MergeOutcome" />
+    <bpmn:sequenceFlow id="F_Applied" sourceRef="B9" targetRef="MergeOutcome" />
+    <bpmn:sequenceFlow id="F_UserTimeout" sourceRef="User_Timeout" targetRef="MergeOutcome" />
+    <bpmn:sequenceFlow id="F_Log" sourceRef="MergeOutcome" targetRef="B10" />
+    <bpmn:sequenceFlow id="F_CheckOptions" sourceRef="B10" targetRef="OptionsSent" />
+    <bpmn:sequenceFlow id="F_Return" name="Да" sourceRef="OptionsSent" targetRef="B11">
+      <bpmn:conditionExpression xsi:type="bpmn:tFormalExpression">options_sent</bpmn:conditionExpression>
+    </bpmn:sequenceFlow>
+    <bpmn:sequenceFlow id="F_Silent" name="Нет" sourceRef="OptionsSent" targetRef="End" />
+    <bpmn:sequenceFlow id="F_End" sourceRef="B11" targetRef="End" />
+  </bpmn:process>
+  <bpmn:collaboration id="Collaboration_Replacement" name="Подбор замены блюда в корзине Яндекс Еды">
+    <bpmn:participant id="Pool_Buyer" name="Покупатель" />
+    <bpmn:participant id="Pool_System" name="Система подбора товара" processRef="Process_Replacement" />
+    <bpmn:participant id="Pool_Training" name="ML-пайплайн" />
+    <bpmn:messageFlow id="M_Request" name="Запрос замены" sourceRef="Pool_Buyer" targetRef="Start" />
+    <bpmn:messageFlow id="M_Options" name="Варианты" sourceRef="B8a" targetRef="Pool_Buyer" />
+    <bpmn:messageFlow id="M_Choice" name="Выбор или отказ" sourceRef="Pool_Buyer" targetRef="B8c" />
+    <bpmn:messageFlow id="M_Result" name="Итог подбора" sourceRef="B11" targetRef="Pool_Buyer" />
+    <bpmn:messageFlow id="M_Feedback" name="Показ и исход" sourceRef="B10" targetRef="Pool_Training" />
+  </bpmn:collaboration>
+  <bpmndi:BPMNDiagram id="Diagram_Replacement" name="BPMN — замена недоступного блюда в корзине Яндекс Еды">
+    <bpmndi:BPMNPlane id="Plane_Replacement" bpmnElement="Collaboration_Replacement">
+      <bpmndi:BPMNShape id="Pool_Buyer_di" bpmnElement="Pool_Buyer" isHorizontal="true">
+        <dc:Bounds x="155" y="84" width="110" height="946" />
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="Pool_System_di" bpmnElement="Pool_System" isHorizontal="false">
+        <dc:Bounds x="334" y="84" width="612" height="1365" />
+        <bpmndi:BPMNLabel />
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="Lane_Select_di" bpmnElement="Lane_Select" isHorizontal="false">
+        <dc:Bounds x="334" y="114" width="412" height="1335" />
+        <bpmndi:BPMNLabel />
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="Lane_ML_di" bpmnElement="Lane_ML" isHorizontal="false">
+        <dc:Bounds x="746" y="114" width="200" height="1335" />
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="Start_di" bpmnElement="Start">
+        <dc:Bounds x="549" y="152" width="32" height="32" />
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="B2_di" bpmnElement="B2">
+        <dc:Bounds x="497" y="219" width="136" height="62" />
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="B3_di" bpmnElement="B3">
+        <dc:Bounds x="762" y="300" width="132" height="62" />
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="B4_di" bpmnElement="B4" isMarkerVisible="true">
+        <dc:Bounds x="546" y="382" width="38" height="38" />
+        <bpmndi:BPMNLabel>
+          <dc:Bounds x="481" y="377" width="61" height="27" />
+        </bpmndi:BPMNLabel>
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="B5_di" bpmnElement="B5">
+        <dc:Bounds x="618" y="469" width="120" height="58" />
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="B6_di" bpmnElement="B6">
+        <dc:Bounds x="497" y="565" width="136" height="62" />
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="B7_di" bpmnElement="B7" isMarkerVisible="true">
+        <dc:Bounds x="546" y="653" width="38" height="38" />
+        <bpmndi:BPMNLabel>
+          <dc:Bounds x="483" y="650" width="58" height="27" />
+        </bpmndi:BPMNLabel>
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="B8a_di" bpmnElement="B8a">
+        <dc:Bounds x="497" y="718" width="136" height="62" />
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="B8b_di" bpmnElement="B8b">
+        <dc:Bounds x="638" y="724" width="102" height="62" />
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="B8c_di" bpmnElement="B8c">
+        <dc:Bounds x="497" y="812" width="136" height="62" />
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="Choice_di" bpmnElement="Choice" isMarkerVisible="true">
+        <dc:Bounds x="546" y="901" width="38" height="38" />
+        <bpmndi:BPMNLabel>
+          <dc:Bounds x="597" y="900" width="72" height="27" />
+        </bpmndi:BPMNLabel>
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="B9_di" bpmnElement="B9">
+        <dc:Bounds x="497" y="953" width="136" height="62" />
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="MergeOutcome_di" bpmnElement="MergeOutcome" isMarkerVisible="true">
+        <dc:Bounds x="546" y="1045" width="38" height="38" />
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="B10_di" bpmnElement="B10">
+        <dc:Bounds x="497" y="1114" width="136" height="62" />
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="OptionsSent_di" bpmnElement="OptionsSent" isMarkerVisible="true">
+        <dc:Bounds x="546" y="1207" width="38" height="38" />
+        <bpmndi:BPMNLabel>
+          <dc:Bounds x="489" y="1207" width="53" height="27" />
+        </bpmndi:BPMNLabel>
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="B11_di" bpmnElement="B11">
+        <dc:Bounds x="497" y="1267" width="136" height="62" />
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="End_di" bpmnElement="End">
+        <dc:Bounds x="549" y="1364" width="32" height="32" />
+        <bpmndi:BPMNLabel>
+          <dc:Bounds x="517" y="1400" width="97" height="14" />
+        </bpmndi:BPMNLabel>
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="ML_Error_di" bpmnElement="ML_Error">
+        <dc:Bounds x="882" y="319" width="24" height="24" />
+        <bpmndi:BPMNLabel>
+          <dc:Bounds x="859" y="403" width="65" height="14" />
+        </bpmndi:BPMNLabel>
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="User_Timeout_di" bpmnElement="User_Timeout">
+        <dc:Bounds x="621" y="831" width="24" height="24" />
+        <bpmndi:BPMNLabel>
+          <dc:Bounds x="583" y="875" width="70" height="14" />
+        </bpmndi:BPMNLabel>
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="Catalog_Error_di" bpmnElement="Catalog_Error">
+        <dc:Bounds x="621" y="221" width="24" height="24" />
+        <bpmndi:BPMNLabel>
+          <dc:Bounds x="652" y="213" width="98" height="14" />
+        </bpmndi:BPMNLabel>
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNEdge id="F_Start_di" bpmnElement="F_Start">
+        <di:waypoint x="565" y="184" />
+        <di:waypoint x="565" y="219" />
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="F_ToML_di" bpmnElement="F_ToML">
+        <di:waypoint x="633" y="250" />
+        <di:waypoint x="734" y="250" />
+        <di:waypoint x="734" y="331" />
+        <di:waypoint x="762" y="331" />
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="F_MLResult_di" bpmnElement="F_MLResult">
+        <di:waypoint x="828" y="362" />
+        <di:waypoint x="828" y="401" />
+        <di:waypoint x="584" y="401" />
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="F_YesML_di" bpmnElement="F_YesML">
+        <di:waypoint x="565" y="420" />
+        <di:waypoint x="565" y="565" />
+        <bpmndi:BPMNLabel>
+          <dc:Bounds x="542" y="477" width="25" height="14" />
+        </bpmndi:BPMNLabel>
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="F_NoML_di" bpmnElement="F_NoML">
+        <di:waypoint x="575" y="410" />
+        <di:waypoint x="596" y="431" />
+        <di:waypoint x="678" y="431" />
+        <di:waypoint x="678" y="469" />
+        <bpmndi:BPMNLabel>
+          <dc:Bounds x="621" y="435" width="30" height="14" />
+        </bpmndi:BPMNLabel>
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="F_Error_di" bpmnElement="F_Error">
+        <di:waypoint x="906" y="331" />
+        <di:waypoint x="916" y="331" />
+        <di:waypoint x="916" y="498" />
+        <di:waypoint x="738" y="498" />
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="F_Rule_di" bpmnElement="F_Rule">
+        <di:waypoint x="678" y="527" />
+        <di:waypoint x="678" y="596" />
+        <di:waypoint x="633" y="596" />
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="F_Availability_di" bpmnElement="F_Availability">
+        <di:waypoint x="565" y="627" />
+        <di:waypoint x="565" y="653" />
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="F_Show_di" bpmnElement="F_Show">
+        <di:waypoint x="565" y="691" />
+        <di:waypoint x="565" y="718" />
+        <bpmndi:BPMNLabel>
+          <dc:Bounds x="541" y="695" width="23" height="14" />
+        </bpmndi:BPMNLabel>
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="F_Empty_di" bpmnElement="F_Empty">
+        <di:waypoint x="584" y="672" />
+        <di:waypoint x="689" y="672" />
+        <di:waypoint x="689" y="724" />
+        <bpmndi:BPMNLabel>
+          <dc:Bounds x="632" y="657" width="33" height="14" />
+        </bpmndi:BPMNLabel>
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="F_Wait_di" bpmnElement="F_Wait">
+        <di:waypoint x="565" y="780" />
+        <di:waypoint x="565" y="812" />
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="F_CatalogFail_di" bpmnElement="F_CatalogFail">
+        <di:waypoint x="645" y="233" />
+        <di:waypoint x="932" y="233" />
+        <di:waypoint x="932" y="755" />
+        <di:waypoint x="740" y="755" />
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="F_NoOptions_di" bpmnElement="F_NoOptions">
+        <di:waypoint x="689" y="786" />
+        <di:waypoint x="689" y="1064" />
+        <di:waypoint x="584" y="1064" />
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="F_Choice_di" bpmnElement="F_Choice">
+        <di:waypoint x="565" y="874" />
+        <di:waypoint x="565" y="901" />
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="F_Apply_di" bpmnElement="F_Apply">
+        <di:waypoint x="565" y="939" />
+        <di:waypoint x="565" y="953" />
+        <bpmndi:BPMNLabel>
+          <dc:Bounds x="537" y="933" width="26" height="14" />
+        </bpmndi:BPMNLabel>
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="F_Refused_di" bpmnElement="F_Refused">
+        <di:waypoint x="546" y="920" />
+        <di:waypoint x="462" y="920" />
+        <di:waypoint x="462" y="1064" />
+        <di:waypoint x="546" y="1064" />
+        <bpmndi:BPMNLabel>
+          <dc:Bounds x="483" y="894" width="50" height="14" />
+        </bpmndi:BPMNLabel>
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="F_Applied_di" bpmnElement="F_Applied">
+        <di:waypoint x="565" y="1015" />
+        <di:waypoint x="565" y="1045" />
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="F_UserTimeout_di" bpmnElement="F_UserTimeout">
+        <di:waypoint x="645" y="843" />
+        <di:waypoint x="663" y="843" />
+        <di:waypoint x="663" y="1038" />
+        <di:waypoint x="600" y="1038" />
+        <di:waypoint x="579" y="1059" />
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="F_Log_di" bpmnElement="F_Log">
+        <di:waypoint x="565" y="1083" />
+        <di:waypoint x="565" y="1114" />
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="F_CheckOptions_di" bpmnElement="F_CheckOptions">
+        <di:waypoint x="565" y="1176" />
+        <di:waypoint x="565" y="1207" />
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="F_Return_di" bpmnElement="F_Return">
+        <di:waypoint x="565" y="1245" />
+        <di:waypoint x="565" y="1267" />
+        <bpmndi:BPMNLabel>
+          <dc:Bounds x="537" y="1245" width="25" height="14" />
+        </bpmndi:BPMNLabel>
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="F_Silent_di" bpmnElement="F_Silent">
+        <di:waypoint x="584" y="1226" />
+        <di:waypoint x="670" y="1226" />
+        <di:waypoint x="670" y="1380" />
+        <di:waypoint x="581" y="1380" />
+        <bpmndi:BPMNLabel>
+          <dc:Bounds x="623" y="1203" width="33" height="14" />
+        </bpmndi:BPMNLabel>
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="F_End_di" bpmnElement="F_End">
+        <di:waypoint x="565" y="1329" />
+        <di:waypoint x="565" y="1364" />
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNShape id="Pool_Training_di" bpmnElement="Pool_Training" isHorizontal="true">
+        <dc:Bounds x="980" y="1070" width="144" height="160" />
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNEdge id="M_Request_di" bpmnElement="M_Request">
+        <di:waypoint x="265" y="168" />
+        <di:waypoint x="549" y="168" />
+        <bpmndi:BPMNLabel>
+          <dc:Bounds x="329" y="173" width="122" height="14" />
+        </bpmndi:BPMNLabel>
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="M_Options_di" bpmnElement="M_Options">
+        <di:waypoint x="497" y="749" />
+        <di:waypoint x="265" y="749" />
+        <bpmndi:BPMNLabel>
+          <dc:Bounds x="349" y="733" width="81" height="14" />
+        </bpmndi:BPMNLabel>
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="M_Choice_di" bpmnElement="M_Choice">
+        <di:waypoint x="265" y="843" />
+        <di:waypoint x="497" y="843" />
+        <bpmndi:BPMNLabel>
+          <dc:Bounds x="332" y="823" width="116" height="14" />
+        </bpmndi:BPMNLabel>
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="M_Result_di" bpmnElement="M_Result">
+        <di:waypoint x="497" y="1298" />
+        <di:waypoint x="210" y="1298" />
+        <di:waypoint x="210" y="1030" />
+        <bpmndi:BPMNLabel>
+          <dc:Bounds x="200" y="1183" width="100" height="14" />
+        </bpmndi:BPMNLabel>
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="M_Feedback_di" bpmnElement="M_Feedback">
+        <di:waypoint x="633" y="1145" />
+        <di:waypoint x="980" y="1145" />
+        <bpmndi:BPMNLabel>
+          <dc:Bounds x="770" y="1119" width="104" height="14" />
+        </bpmndi:BPMNLabel>
+      </bpmndi:BPMNEdge>
+    </bpmndi:BPMNPlane>
+  </bpmndi:BPMNDiagram>
+</bpmn:definitions>

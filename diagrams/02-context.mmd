@@ -1,0 +1,29 @@
+---
+title: C4 Context
+config:
+  flowchart:
+    nodeSpacing: 65
+    rankSpacing: 70
+    shapeSize: variable
+---
+flowchart TB
+    buyer["Покупатель запрашивает<br/>замену блюда.<br/>Выбирает вариант или<br/>отказывается"]
+    system["Система подбора замены<br/>предлагает до 3 блюд из<br/>того же ресторана.<br/>Передаёт выбор в<br/>корзину"]
+    catalog["Блюда ресторана, цены,<br/>доступность и прочие"]
+    spacer[" "]
+    cart["Хранит позиции и<br/>применяет замену"]
+
+    buyer <-->|"Запрашивает замену.<br/>Получает варианты и итог подбора"| system
+    system <-->|"Запрашивает меню ресторана.<br/>Получает позиции, цены и доступность"| catalog
+    %% Невидимый узел центрирует верхние блоки между нижними.
+    system ~~~ spacer
+    system <-->|"Получает данные корзины.<br/>Отправляет подтверждённую замену и<br/>получает результат"| cart
+    classDef person fill:#ffffff,color:#000000,stroke:#000000,stroke-width:2px
+    classDef selection fill:#ffffff,color:#000000,stroke:#000000,stroke-width:2px
+    classDef external fill:#ffffff,color:#000000,stroke:#000000,stroke-width:2px
+    classDef spacerStyle fill:transparent,stroke:transparent,color:transparent,stroke-width:0px
+    class spacer spacerStyle
+    class buyer person
+    class system selection
+    class catalog,cart external
+    linkStyle 0,1,3 stroke:#000000,color:#000000
